@@ -1,4 +1,10 @@
 <?php 
+include 'includes/mlm_commission.php';
+
+// Call this daily via cron job or when purchases occur
+calculateBinaryCommissions($_SESSION['user_id']);
+calculateUnilevelCommissions($sponsor_id, 100); // $100 purchase
+?>
 include 'includes/config.php';
 include 'includes/header.php';
 

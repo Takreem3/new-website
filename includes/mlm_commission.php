@@ -1,33 +1,60 @@
 <?php
-function processMLMCommission($conn, $new_user_id, $sponsor_id) {
-    $package_amount = 1000; // Set your package price
-    $levels = [
-        1 => 0.10, // Level 1: 10%
-        2 => 0.05, // Level 2: 5%
-        3 => 0.03, // Level 3: 3%
-        4 => 0.02, // Level 4: 2%
-        5 => 0.01  // Level 5: 1%
-    ];
+function calculateBinaryCommissions($user_id) {
+    global $conn;
     
-    $current_level = 1;
-    $current_sponsor = $sponsor_id;
-    
-    while ($current_sponsor && $current_level <= 5) {
-        $amount = $package_amount * $levels[$current_level];
-        
+    // Get user's binary tree positions
+    $userNodes = $conn->query("
+        SELECT id, position FROM users 
+        WHERE sponsor_id = $user_id 
+        AND position IN ('left', 'right')
+    ");
+
+    $leftTeam = [];
+    $rightTeam = [];
+
+    while($node = $userNodes->fetch_assoc()) {
+        if($node['position'] == 'left') {
+            $leftTeam[] = $node['id'];
+        } else {
+            $rightTeam[] = $node['id'];
+        }
+    }
+
+    // Calculate pairing
+    $pairs = min(count($leftTeam), count($rightTeam));
+    if($pairs > 0) {
+        $commission = $pairs * 10; // $10 per pair
         $conn->query("
             INSERT INTO commissions 
-            (user_id, amount, type, level, from_user_id, status) 
+            (user_id, amount, type, status) 
             VALUES 
-            ($current_sponsor, $amount, 'unilevel', $current_level, $new_user_id, 'pending')
+            ($user_id, $commission, 'binary', 'pending')
         ");
-        
-        // Move up the sponsorship tree
-        $current_sponsor = $conn->query("
-            SELECT sponsor_id FROM users WHERE id = $current_sponsor
-        ")->fetch_assoc()['sponsor_id'];
-        
-        $current_level++;
+    }
+}
+
+function calculateUnilevelCommissions($user_id, $amount, $level=1) {
+    global $conn;
+    
+    if($level > 5) return; // Limit to 5 levels
+    
+    $commissionRates = [0.10, 0.05, 0.03, 0.02, 0.01]; // 10%, 5%, etc.
+    $commission = $amount * $commissionRates[$level-1];
+    
+    $conn->query("
+        INSERT INTO commissions 
+        (user_id, amount, level, type, status) 
+        VALUES 
+        ($user_id, $commission, $level, 'unilevel', 'pending')
+    ");
+    
+    // Get sponsor for next level
+    $sponsor = $conn->query("
+        SELECT sponsor_id FROM users WHERE id = $user_id
+    ")->fetch_assoc();
+    
+    if($sponsor['sponsor_id']) {
+        calculateUnilevelCommissions($sponsor['sponsor_id'], $amount, $level+1);
     }
 }
 ?>

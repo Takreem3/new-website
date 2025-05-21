@@ -1,58 +1,83 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 include 'includes/config.php';
 include 'includes/auth.php';
+authOnly();
 
 // Check existing KYC status
-$kycStatus = $conn->query("
-    SELECT status FROM kyc_verifications 
-    WHERE user_id = {$_SESSION['user_id']} 
-    ORDER BY submitted_at DESC LIMIT 1
-")->fetch_assoc()['status'] ?? null;
+$stmt = $conn->prepare("SELECT status FROM kyc_verifications WHERE user_id = ? ORDER BY submitted_at DESC LIMIT 1");
+$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->execute();
+$kycStatus = $stmt->get_result()->fetch_assoc()['status'] ?? null;
+$stmt->close();
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && $kycStatus != 'pending') {
     $uploadDir = 'assets/kyc/';
-    $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
     
-    // Validate files
-    $frontImage = validateUpload($_FILES['front_image'], $uploadDir, $allowedTypes);
-    $selfieImage = validateUpload($_FILES['selfie_image'], $uploadDir, $allowedTypes);
-    $backImage = !empty($_FILES['back_image']['name']) 
-        ? validateUpload($_FILES['back_image'], $uploadDir, $allowedTypes) 
-        : null;
+    // Process file uploads
+    $frontImage = uploadFile('front_image', $uploadDir);
+    $selfieImage = uploadFile('selfie_image', $uploadDir);
+    $backImage = !empty($_FILES['back_image']['name']) ? uploadFile('back_image', $uploadDir) : null;
 
     if ($frontImage && $selfieImage) {
-        $conn->query("INSERT INTO kyc_verifications SET 
-            user_id = {$_SESSION['user_id']},
-            document_type = '{$_POST['document_type']}',
-            front_image = '$frontImage',
-            back_image = " . ($backImage ? "'$backImage'" : "NULL") . ",
-            selfie_image = '$selfieImage',
-            status = 'pending'
-        ");
-        $_SESSION['success'] = "KYC submitted for verification!";
-        header("Location: dashboard.php");
-        exit();
+        $stmt = $conn->prepare("INSERT INTO kyc_verifications 
+            (user_id, document_type, front_image, back_image, selfie_image) 
+            VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param(
+            "issss", 
+            $_SESSION['user_id'],
+            $_POST['document_type'],
+            $frontImage,
+            $backImage,
+            $selfieImage
+        );
+        
+        if ($stmt->execute()) {
+            $_SESSION['success'] = "KYC submitted successfully!";
+            header("Location: dashboard.php");
+            exit();
+        } else {
+            $error = "Database error: " . $conn->error;
+        }
     } else {
-        $error = "Invalid file uploads";
+        $error = "Please upload all required files";
     }
 }
 
-function validateUpload($file, $dir, $allowedTypes) {
-    if (!in_array($file['type'], $allowedTypes)) return false;
+function uploadFile($field, $dir) {
+    if (!isset($_FILES[$field]) || $_FILES[$field]['error'] != UPLOAD_ERR_OK) {
+        return false;
+    }
     
-    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $filename = "kyc_".$_SESSION['user_id']."_".time().".".$ext;
-    move_uploaded_file($file['tmp_name'], $dir.$filename);
-    return $filename;
+    $allowed = ['image/jpeg', 'image/png', 'application/pdf'];
+    if (!in_array($_FILES[$field]['type'], $allowed)) {
+        return false;
+    }
+    
+    $ext = pathinfo($_FILES[$field]['name'], PATHINFO_EXTENSION);
+    $filename = "kyc_" . $_SESSION['user_id'] . "_" . time() . "_$field.$ext";
+    $target = $dir . $filename;
+    
+    if (move_uploaded_file($_FILES[$field]['tmp_name'], $target)) {
+        return $filename;
+    }
+    return false;
 }
 
 include 'includes/header.php';
 ?>
 
 <div class="container py-4">
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success"><?= $_SESSION['success'] ?></div>
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+    
     <?php if ($kycStatus == 'pending'): ?>
-        <div class="alert alert-info">Your KYC is under review</div>
+        <div class="alert alert-info">Your KYC verification is in progress</div>
     <?php elseif ($kycStatus == 'approved'): ?>
         <div class="alert alert-success">Your account is verified</div>
     <?php else: ?>
@@ -64,43 +89,37 @@ include 'includes/header.php';
                 <?php if (isset($error)): ?>
                     <div class="alert alert-danger"><?= $error ?></div>
                 <?php endif; ?>
-
+                
                 <form method="POST" enctype="multipart/form-data">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Document Type*</label>
-                            <select name="document_type" class="form-select" required>
-                                <option value="">Select Document</option>
-                                <option value="id_card">National ID Card</option>
-                                <option value="passport">Passport</option>
-                                <option value="driving_license">Driver's License</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Document Front*</label>
-                            <input type="file" name="front_image" class="form-control" accept="image/*,.pdf" required>
-                            <small class="text-muted">Clear photo/scan of document front</small>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Document Back</label>
-                            <input type="file" name="back_image" class="form-control" accept="image/*,.pdf">
-                            <small class="text-muted">Required for ID cards/driver licenses</small>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Selfie with Document*</label>
-                            <input type="file" name="selfie_image" class="form-control" accept="image/*" required>
-                            <small class="text-muted">Hold document near your face</small>
-                        </div>
-
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary px-4">
-                                Submit Verification
-                            </button>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">Document Type*</label>
+                        <select name="document_type" class="form-control" required>
+                            <option value="">Select Document</option>
+                            <option value="id_card">National ID Card</option>
+                            <option value="passport">Passport</option>
+                            <option value="driving_license">Driver's License</option>
+                        </select>
                     </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Document Front*</label>
+                        <input type="file" name="front_image" class="form-control" accept="image/*,.pdf" required>
+                        <small class="text-muted">Clear photo of the front side</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Document Back</label>
+                        <input type="file" name="back_image" class="form-control" accept="image/*,.pdf">
+                        <small class="text-muted">Required for ID cards/driver licenses</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Selfie with Document*</label>
+                        <input type="file" name="selfie_image" class="form-control" accept="image/*" required>
+                        <small class="text-muted">Hold document near your face</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Submit Verification</button>
                 </form>
             </div>
         </div>

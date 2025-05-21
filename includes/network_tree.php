@@ -1,30 +1,41 @@
 <?php
-// Get current user's downline
 $user_id = $_SESSION['user_id'];
-$downline = $conn->query("
-    SELECT id, username, sponsor_id, position 
-    FROM users 
-    WHERE sponsor_id = $user_id
-");
+$levels = 3; // Display 3 levels deep
 
-if ($downline->num_rows > 0): ?>
-    <ul class="network-tree">
-        <?php while($member = $downline->fetch_assoc()): ?>
-            <li>
-                <span class="node"><?= $member['username'] ?> (ID: <?= $member['id'] ?>)</span>
-                <?php 
-                // Recursive function for multi-level (simplified)
-                $sub_downline = $conn->query("SELECT id, username FROM users WHERE sponsor_id = {$member['id']}");
-                if ($sub_downline->num_rows > 0): ?>
-                    <ul>
-                        <?php while($sub_member = $sub_downline->fetch_assoc()): ?>
-                            <li><?= $sub_member['username'] ?> (ID: <?= $sub_member['id'] ?>)</li>
-                        <?php endwhile; ?>
-                    </ul>
-                <?php endif; ?>
-            </li>
-        <?php endwhile; ?>
-    </ul>
-<?php else: ?>
-    <p>No downline members yet. Share your referral link!</p>
-<?php endif; ?>
+function buildTree($conn, $user_id, $currentLevel = 0, $maxLevel = 3) {
+    if($currentLevel >= $maxLevel) return '';
+    
+    $html = '<ul>';
+    $children = $conn->query("
+        SELECT id, username, position 
+        FROM users 
+        WHERE sponsor_id = $user_id
+    ");
+    
+    while($child = $children->fetch_assoc()) {
+        $html .= '<li>';
+        $html .= $child['username'] . ' (' . $child['position'] . ')';
+        $html .= buildTree($conn, $child['id'], $currentLevel+1, $maxLevel);
+        $html .= '</li>';
+    }
+    
+    $html .= '</ul>';
+    return $html;
+}
+?>
+
+<div class="network-tree">
+    <h5>Your Network</h5>
+    <?= buildTree($conn, $user_id, 0, $levels) ?>
+</div>
+
+<style>
+.network-tree ul {
+    list-style-type: none;
+    padding-left: 20px;
+}
+.network-tree li {
+    margin: 5px 0;
+    position: relative;
+}
+</style>
