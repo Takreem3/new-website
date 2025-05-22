@@ -1,135 +1,126 @@
-<?php 
-include 'includes/mlm_commission.php';
-
-// Call this daily via cron job or when purchases occur
-calculateBinaryCommissions($_SESSION['user_id']);
-calculateUnilevelCommissions($sponsor_id, 100); // $100 purchase
-?>
-include 'includes/config.php';
-include 'includes/header.php';
-
-// Redirect if not logged in
+<?php
+// ======================
+// SECURITY & SESSION CHECKS
+// ======================
+session_start();
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 
-// Get user info
+include('config.php');
+
+// ======================
+// SECURE DATA FETCHING
+// ======================
 $user_id = $_SESSION['user_id'];
-$user = $conn->query("SELECT u.*, ud.full_name FROM users u 
-                     LEFT JOIN user_details ud ON u.id = ud.user_id 
-                     WHERE u.id = $user_id")->fetch_assoc();
+$is_admin = $_SESSION['is_admin'] ?? false; // Admin check
 
-// Get commission summary
-$commissions = $conn->query("SELECT SUM(amount) as total, type 
-                            FROM commissions 
-                            WHERE user_id = $user_id 
-                            GROUP BY type");
-?>
-<div class="card mt-4">
-    <div class="card-header">
-        <h5>Your Network</h5>
-    </div>
-    <div class="card-body">
-        <?php include 'includes/network_tree.php'; ?>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-3">
-        <div class="card">
-            <div class="card-header">
-                User Profile
-            </div>
-            <div class="card-body">
-                <p><strong>Username:</strong> <?php echo $user['username']; ?></p>
-                <p><strong>Name:</strong> <?php echo $user['full_name'] ?? 'Not set'; ?></p>
-                <p><strong>Sponsor ID:</strong> <?php echo $user['sponsor_id'] ?? 'None'; ?></p>
-                <a href="profile.php" class="btn btn-sm btn-primary">Edit Profile</a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-9">
-        <div class="card">
-            <div class="card-header">
-                Commission Summary
-            </div>
-            <div class="card-body">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while($row = $commissions->fetch_assoc()): ?>
-                        <tr>
-                            <td><?php echo ucfirst($row['type']); ?></td>
-                            <td>$<?php echo number_format($row['total'], 2); ?></td>
-                        </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
+// Fetch user data (prepared statement)
+$user_query = "SELECT username, email, created_at FROM users WHERE id = ?";
+$stmt = $conn->prepare($user_query);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$user_result = $stmt->get_result();
 
-<?php include 'includes/footer.php'; ?>
-<div class="card mt-4">
-    <div class="card-header">
-        <h5>Your Earnings</h5>
-    </div>
-    <div class="card-body">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Level</th>
-                    <th>Amount</th>
-                    <th>From User</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php 
-                $earnings = $conn->query("
-                    SELECT c.*, u.username as from_user 
-                    FROM commissions c 
-                    LEFT JOIN users u ON c.from_user_id = u.id 
-                    WHERE c.user_id = $user_id
-                ");
-                while($row = $earnings->fetch_assoc()): ?>
-                    <tr>
-                        <td><?= ucfirst($row['type']) ?></td>
-                        <td><?= $row['level'] ?></td>
-                        <td>$<?= number_format($row['amount'], 2) ?></td>
-                        <td><?= $row['from_user'] ?? 'System' ?></td>
-                        <td><?= date('M d, Y', strtotime($row['created_at'])) ?></td>
-                    </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-<div class="mb-3">
-    <h6>Your Referral Link:</h6>
-    <div class="input-group">
-        <input type="text" id="referralLink" 
-               value="<?= BASE_URL ?>register.php?ref=<?= $user['username'] ?>" 
-               class="form-control" readonly>
-        <button class="btn btn-outline-secondary" onclick="copyReferralLink()">
-            Copy
-        </button>
-    </div>
-</div>
-
-<script>
-function copyReferralLink() {
-    const link = document.getElementById("referralLink");
-    link.select();
-    document.execCommand("copy");
-    alert("Copied to clipboard!");
+if (!$user_result || $user_result->num_rows === 0) {
+    die("User not found!");
 }
-</script>
+$user = $user_result->fetch_assoc();
+
+// Fetch additional data (e.g., user posts)
+$posts_query = "SELECT id, title, content FROM posts WHERE user_id = ?";
+$stmt_posts = $conn->prepare($posts_query);
+$stmt_posts->bind_param("i", $user_id);
+$stmt_posts->execute();
+$posts_result = $stmt_posts->get_result();
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | <?php echo htmlspecialchars($user['username']); ?></title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Your Custom CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <!-- ======================
+         YOUR EXISTING SIDEBAR 
+         ====================== -->
+    <?php include('includes/sidebar.php'); ?>
+
+    <div class="main-content">
+        <!-- ======================
+             ENHANCED USER PROFILE SECTION  
+             ====================== -->
+        <div class="container py-5">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2>Welcome back, <strong><?php echo htmlspecialchars($user['username']); ?></strong>!</h2>
+                    <?php if ($is_admin): ?>
+                        <span class="badge bg-danger">Admin</span>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
+                            <p><strong>Member since:</strong> <?php echo date('F j, Y', strtotime($user['created_at'])); ?></p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="edit_profile.php" class="btn btn-warning">Edit Profile</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================
+                 YOUR POSTS SECTION (EXAMPLE)
+                 ====================== -->
+            <div class="card mt-4 shadow">
+                <div class="card-header">
+                    <h3>Your Recent Posts</h3>
+                </div>
+                <div class="card-body">
+                    <?php if ($posts_result->num_rows > 0): ?>
+                        <div class="list-group">
+                            <?php while ($post = $posts_result->fetch_assoc()): ?>
+                                <div class="list-group-item">
+                                    <h5><?php echo htmlspecialchars($post['title']); ?></h5>
+                                    <p><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
+                                    <small class="text-muted">
+                                        <a href="edit_post.php?id=<?php echo $post['id']; ?>" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    </small>
+                                </div>
+                            <?php endwhile; ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-muted">No posts yet. <a href="new_post.php">Create one?</a></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================
+         FOOTER & SCRIPTS 
+         ====================== -->
+    <?php include('includes/footer.php'); ?>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Your Custom JS -->
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
+
+<?php
+// Close connections
+$stmt->close();
+$stmt_posts->close();
+$conn->close();
+?>
