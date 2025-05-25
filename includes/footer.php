@@ -1,4 +1,4 @@
-</div>
+﻿</div>
     <footer class="bg-dark text-white text-center p-3 mt-4">
         <div class="container">
             &copy; <?php echo date('Y'); ?> MLM System. All rights reserved.

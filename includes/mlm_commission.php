@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 function calculateBinaryCommissions($user_id) {
     global $conn;
     

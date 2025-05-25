@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require __DIR__ . '/../includes/config.php';
 
 // Process pending withdrawals
