@@ -1,8 +1,9 @@
 ﻿<?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Add this line near the top, after session_start
-require __DIR__.'/notification_functions.php';
+require __DIR__.'/notification_functions.php'; // Make sure this file exists and $conn is available
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,7 +13,7 @@ require __DIR__.'/notification_functions.php';
     <title>MLM System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?php echo BASE_URL; ?>assets/css/style.css" rel="stylesheet">
-    <!-- Bootstrap Icons for the bell icon -->
+    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
@@ -34,13 +35,17 @@ require __DIR__.'/notification_functions.php';
                             <a class="nav-link position-relative" href="notifications.php">
                                 <i class="bi bi-bell"></i>
                                 <?php
-                                    $unread = getUnreadCount($conn, $_SESSION['user_id']);
-                                    if ($unread > 0):
+                                    if (isset($conn)) {
+                                        $unread = getUnreadCount($conn, $_SESSION['user_id']);
+                                        if ($unread > 0):
                                 ?>
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                                         <?= $unread ?>
                                     </span>
-                                <?php endif; ?>
+                                <?php
+                                        endif;
+                                    }
+                                ?>
                             </a>
                         </li>
 
