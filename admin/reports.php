@@ -84,3 +84,11 @@ new Chart(document.getElementById('commissionChart'), {
 </script>
 
 <?php include '../includes/footer.php'; ?>
+<div class="mb-4">
+    <a href="export_reports.php" class="btn btn-success">
+        <i class="bi bi-download"></i> Export to Excel
+    </a>
+    <a href="export_reports.php?type=pdf" class="btn btn-danger ms-2">
+        <i class="bi bi-file-pdf"></i> Export as PDF
+    </a>
+</div>
