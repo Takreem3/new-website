@@ -50,3 +50,16 @@ body {
 .input-group {
     margin-bottom: 10px;
 }
+/* Mobile-first styles */
+@media (max-width: 768px) {
+    .navbar-nav {
+        flex-direction: column !important;
+    }
+    .container {
+        padding: 0 15px;
+    }
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+}

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require __DIR__.'/includes/config.php';
 require __DIR__.'/includes/auth.php';
 
@@ -85,3 +85,4 @@ Crypto: Wallet Address"></textarea>
 </div>
 
 <?php require __DIR__.'/includes/footer.php'; ?>
+

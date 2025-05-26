@@ -5,20 +5,23 @@ $token = $_GET['token'] ?? '';
 $valid = false;
 
 if($token) {
-    $reset = $conn->query("
-        SELECT * FROM password_resets 
-        WHERE token = '$token' 
-        AND used = 0 
-        AND expires_at > NOW()
-    ")->fetch_assoc();
-    
+    $stmt = $conn->prepare("SELECT * FROM password_resets WHERE token = ? AND used = 0 AND expires_at > NOW()");
+    $stmt->bind_param("s", $token);
+    $stmt->execute();
+    $reset = $stmt->get_result()->fetch_assoc();
     $valid = (bool)$reset;
 }
 
 if($_SERVER['REQUEST_METHOD'] == 'POST' && $valid) {
     $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
-    $conn->query("UPDATE users SET password='$password' WHERE id={$reset['user_id']}");
-    $conn->query("UPDATE password_resets SET used=1 WHERE id={$reset['id']}");
+    
+    // Update password
+    $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+    $stmt->bind_param("si", $password, $reset['user_id']);
+    $stmt->execute();
+    
+    // Mark token as used
+    $conn->query("UPDATE password_resets SET used = 1 WHERE id = {$reset['id']}");
     
     $_SESSION['message'] = "Password updated! Please login";
     header("Location: login.php");
@@ -28,18 +31,30 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && $valid) {
 require __DIR__.'/includes/header.php';
 ?>
 
-<div class="container">
+<div class="container mt-5">
     <?php if($valid): ?>
-        <h2>Reset Password</h2>
-        <form method="POST">
-            <div class="mb-3">
-                <label>New Password</label>
-                <input type="password" name="password" class="form-control" required>
+        <div class="card mx-auto" style="max-width: 500px;">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Reset Password</h4>
             </div>
-            <button type="submit" class="btn btn-primary">Update Password</button>
-        </form>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="password" class="form-label">New Password</label>
+                        <input type="password" name="password" class="form-control" required minlength="8">
+                        <div class="form-text">Minimum 8 characters</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Update Password</button>
+                </form>
+            </div>
+        </div>
     <?php else: ?>
-        <div class="alert alert-danger">Invalid or expired reset link</div>
+        <div class="alert alert-danger text-center mx-auto" style="max-width: 500px;">
+            <i class="bi bi-exclamation-triangle-fill"></i> Invalid or expired reset link
+            <div class="mt-2">
+                <a href="login.php" class="btn btn-sm btn-outline-danger">Back to Login</a>
+            </div>
+        </div>
     <?php endif; ?>
 </div>
 

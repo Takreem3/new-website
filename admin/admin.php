@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // ======================
 // SECURITY & AUTHENTICATION
 // ======================
@@ -164,3 +164,4 @@ $users = $conn->query("SELECT id, username, email, is_admin, created_at FROM use
     </script>
 </body>
 </html>
+

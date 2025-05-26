@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 require 'config.php';
 
@@ -50,3 +50,4 @@ $user = $stmt->get_result()->fetch_assoc();
     </div>
 </body>
 </html>
+

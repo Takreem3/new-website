@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Security check
 if(!defined('IN_MLM')) {
     die("Direct access denied");

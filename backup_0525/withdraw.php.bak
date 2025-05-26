@@ -1,0 +1,83 @@
+﻿<?php
+require __DIR__.'/includes/config.php';
+require __DIR__.'/includes/auth.php';
+
+// Check available balance
+$balance = $conn->query("
+    SELECT SUM(amount) 
+    FROM commissions 
+    WHERE user_id = {$_SESSION['user_id']} 
+    AND status = 'approved'
+")->fetch_row()[0] ?? 0;
+
+// Process request
+if($_SERVER['REQUEST_METHOD'] == 'POST' && $balance >= 50) { // Minimum $50
+    $amount = (float)$_POST['amount'];
+    $method = $conn->real_escape_string($_POST['method']);
+    $details = $conn->real_escape_string($_POST['details']);
+    
+    $conn->query("
+        INSERT INTO withdrawals 
+        SET user_id = {$_SESSION['user_id']},
+            amount = $amount,
+            payment_method = '$method',
+            account_details = '$details'
+    ");
+    $_SESSION['success'] = "Withdrawal request submitted!";
+    header("Location: dashboard.php");
+    exit();
+}
+
+require __DIR__.'/includes/header.php';
+?>
+
+<div class="container">
+    <h2>Withdraw Funds</h2>
+    
+    <?php if(isset($_SESSION['success'])): ?>
+        <div class="alert alert-success"><?= $_SESSION['success'] ?></div>
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+    
+    <div class="card">
+        <div class="card-body">
+            <h5>Available Balance: $<?= number_format($balance, 2) ?></h5>
+            
+            <?php if($balance >= 50): ?>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label>Amount</label>
+                        <input type="number" name="amount" class="form-control" 
+                               max="<?= $balance ?>" min="50" step="0.01" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Payment Method</label>
+                        <select name="method" class="form-control" required>
+                            <option value="">Select Method</option>
+                            <option value="bank">Bank Transfer</option>
+                            <option value="paypal">PayPal</option>
+                            <option value="crypto">Cryptocurrency</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Account Details</label>
+                        <textarea name="details" class="form-control" rows="4" required
+                                  placeholder="Bank: Account Number, Name, Branch
+PayPal: Email Address
+Crypto: Wallet Address"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                </form>
+            <?php else: ?>
+                <div class="alert alert-warning">
+                    Minimum withdrawal amount is $50 (Your balance: $<?= number_format($balance, 2) ?>)
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<?php require __DIR__.'/includes/footer.php'; ?>

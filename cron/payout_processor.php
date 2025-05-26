@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require __DIR__ . '/../includes/config.php';
 
 // Process pending withdrawals
@@ -24,3 +24,4 @@ while($withdrawal = $withdrawals->fetch_assoc()) {
 // Log execution
 file_put_contents(__DIR__ . '/payout_log.txt', date('Y-m-d H:i:s') . " Processed\n", FILE_APPEND);
 ?>
+

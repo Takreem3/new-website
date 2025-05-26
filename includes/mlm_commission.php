@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 function calculateBinaryCommissions($user_id) {
     global $conn;
     
@@ -58,3 +58,4 @@ function calculateUnilevelCommissions($user_id, $amount, $level=1) {
     }
 }
 ?>
+

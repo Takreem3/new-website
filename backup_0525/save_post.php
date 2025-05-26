@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 require 'config.php';
 
@@ -20,3 +20,4 @@ $stmt->execute();
 
 header("Location: dashboard.php"); // Redirect after saving
 ?>
+

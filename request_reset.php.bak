@@ -1,0 +1,58 @@
+<?php
+require __DIR__.'/includes/config.php';
+require __DIR__.'/includes/mail_config.php';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $email = $conn->real_escape_string($_POST['email']);
+    $user = $conn->query("SELECT id FROM users WHERE email = '$email'")->fetch_assoc();
+    
+    if ($user) {
+        $token = bin2hex(random_bytes(32));
+        $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
+        
+        // Delete any existing tokens
+        $conn->query("DELETE FROM password_resets WHERE user_id = {$user['id']}");
+        
+        // Insert new token
+        $conn->query("INSERT INTO password_resets (user_id, token, expires_at) VALUES ({$user['id']}, '$token', '$expires')");
+        
+        // Send email
+        if (sendResetEmail($email, $token)) {
+            $_SESSION['message'] = "Reset link sent to your email";
+            header("Location: login.php");
+            exit();
+        } else {
+            $error = "Failed to send email. Please try again later.";
+        }
+    } else {
+        $error = "Email not found in our system";
+    }
+}
+
+require __DIR__.'/includes/header.php';
+?>
+
+<div class="container mt-5">
+    <div class="card mx-auto" style="max-width: 500px;">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Reset Password</h4>
+        </div>
+        <div class="card-body">
+            <?php if(isset($error)): ?>
+                <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+            <?php endif; ?>
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Send Reset Link</button>
+            </form>
+            <div class="mt-3 text-center">
+                <a href="login.php" class="text-decoration-none">Back to Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php require __DIR__.'/includes/footer.php'; ?>

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once 'vendor/autoload.php'; // Install with: composer require pragmarx/google2fa
 
 function setup2FA($user_id) {
@@ -32,3 +32,4 @@ function verify2FA($user_id, $code) {
     return $google2fa->verifyKey($secret, $code);
 }
 ?>
+

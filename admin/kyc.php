@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 include '../includes/config.php';
 include '../includes/auth.php';
 adminOnly();
@@ -55,3 +55,4 @@ include '../includes/header.php';
 </div>
 
 <?php include '../includes/footer.php'; ?>
+

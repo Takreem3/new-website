@@ -1,0 +1,38 @@
+<?php
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+defined('BASE_URL') || define('BASE_URL', 'http://localhost/mlm_website/');
+
+function sendResetEmail($email, $token) {
+    $mail = new PHPMailer(true);
+    
+    try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com'; // Your SMTP server
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'your@gmail.com'; // SMTP username
+        $mail->Password   = 'your_app_password'; // Use App Password for Gmail
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port       = 465;
+
+        // Recipients
+        $mail->setFrom('noreply@yourdomain.com', 'MLM System');
+        $mail->addAddress($email);
+
+        // Content
+        $resetLink = BASE_URL . "reset_password.php?token=$token";
+        $mail->isHTML(true);
+        $mail->Subject = 'Password Reset Request';
+        $mail->Body    = "Click to reset: <a href='$resetLink'>$resetLink</a>";
+        $mail->AltBody = "Reset link: $resetLink";
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Mailer Error: {$mail->ErrorInfo}");
+        return false;
+    }
+}
+?>

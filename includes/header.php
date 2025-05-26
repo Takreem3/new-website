@@ -1,80 +1,70 @@
-﻿<?php
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Include config first
-require __DIR__.'/config.php';
-
-// Then include other dependencies
-require_once __DIR__.'/notification_functions.php';
-?>
-<!DOCTYPE html>
-<!-- Rest of your header.php content remains exactly the same -->
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Include configuration and functions
 require __DIR__.'/config.php';
 require __DIR__.'/notification_functions.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Required meta tags -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MLM System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <!-- Page Title -->
+    <title><?php echo isset($pageTitle) ? htmlspecialchars($pageTitle) : 'MLM System'; ?></title>
+    
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?php echo BASE_URL; ?>assets/css/style.css" rel="stylesheet">
+    
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="<?php echo BASE_URL; ?>assets/css/style.css" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="<?php echo BASE_URL; ?>assets/images/favicon.ico">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="<?php echo BASE_URL; ?>">MLM System</a>
+            <a class="navbar-brand" href="<?php echo BASE_URL; ?>">
+                <i class="bi bi-people-fill"></i> MLM System
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <?php if (isset($_SESSION['user_id'])): ?>
-                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>dashboard.php">Dashboard</a></li>
-                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>profile.php">Profile</a></li>
-                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>reports.php">Reports</a></li>
-
+                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>dashboard.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>profile.php"><i class="bi bi-person"></i> Profile</a></li>
+                        
                         <!-- Notification Bell -->
                         <li class="nav-item">
                             <a class="nav-link position-relative" href="<?php echo BASE_URL; ?>notifications.php">
                                 <i class="bi bi-bell"></i>
-                                <?php
-                                    if (isset($_SESSION['user_id']) && isset($conn)) {
-                                        $unread = getUnreadCount($conn, $_SESSION['user_id']);
-                                        if ($unread > 0):
-                                ?>
+                                <?php if (isset($_SESSION['user_id']) && isset($conn)): 
+                                    $unread = getUnreadCount($conn, $_SESSION['user_id']);
+                                    if ($unread > 0): ?>
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                                         <?= $unread ?>
-                                        <span class="visually-hidden">unread notifications</span>
                                     </span>
-                                <?php
-                                        endif;
-                                    }
-                                ?>
+                                <?php endif; endif; ?>
                             </a>
                         </li>
 
                         <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
-                            <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>admin/users.php">Users</a></li>
+                            <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>admin/users.php"><i class="bi bi-people"></i> Users</a></li>
                         <?php endif; ?>
 
-                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>logout.php">Logout</a></li>
+                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                     <?php else: ?>
-                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>register.php">Register</a></li>
-                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>login.php">Login</a></li>
-                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>forgot_password.php">Forgot Password?</a></li>
+                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>register.php"><i class="bi bi-person-plus"></i> Register</a></li>
+                        <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>login.php"><i class="bi bi-box-arrow-in-right"></i> Login</a></li>
                     <?php endif; ?>
                 </ul>
             </div>

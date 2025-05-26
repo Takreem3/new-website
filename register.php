@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 include 'includes/config.php';
 include 'includes/header.php';
 
@@ -171,3 +171,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </div>
 
 <?php include 'includes/footer.php'; ?>
+

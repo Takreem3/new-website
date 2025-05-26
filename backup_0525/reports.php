@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 include '../includes/config.php';
 include '../includes/auth.php';
 adminOnly();
@@ -84,3 +84,4 @@ new Chart(document.getElementById('commissionChart'), {
 </script>
 
 <?php include '../includes/footer.php'; ?>
+
