@@ -1,8 +1,4 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 function authOnly() {
     if (!isset($_SESSION['user_id'])) {
         header("Location: login.php");
@@ -11,8 +7,8 @@ function authOnly() {
 }
 
 function adminOnly() {
-    if (!isset($_SESSION['admin_id'])) {
-        header("Location: login.php");
+    if ($_SESSION['user_role'] !== 'admin') {
+        header("Location: ../login.php");
         exit();
     }
 }

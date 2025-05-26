@@ -20,7 +20,7 @@ if(isset($_GET['action']) && isset($_GET['id'])) {
                 processed_at = NOW() 
             WHERE id = $id
         ");
-        $_SESSION['message'] = "Withdrawal $action"d!";
+$conn->query("UPDATE withdrawals SET status='approved' WHERE id=$withdrawal_id");
         header("Location: withdrawals.php");
         exit();
     }

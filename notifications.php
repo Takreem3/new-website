@@ -3,13 +3,12 @@ require __DIR__.'/includes/config.php';
 require __DIR__.'/includes/auth.php';
 authOnly();
 
-// Fetch notifications
-$notifications = $conn->query("SELECT * FROM notifications WHERE user_id = {$_SESSION['user_id']}");
+// Notification display code here
 
 require __DIR__.'/includes/header.php';
 ?>
 <div class="container">
-    <h2>Your Notifications</h2>
-    <!-- Display notifications here -->
+    <h2>Notifications</h2>
+    <!-- Content -->
 </div>
 <?php require __DIR__.'/includes/footer.php'; ?>
