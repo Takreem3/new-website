@@ -15,7 +15,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         // Insert new token
         $conn->query("INSERT INTO password_resets (user_id, token, expires_at) VALUES ({$user['id']}, '$token', '$expires')");
-        
+        // After token generation (around line 20)
+$reset_link = BASE_URL . "reset_password.php?token=$token";
+$email_body = "
+    <h2>Password Reset Request</h2>
+    <p>Click below to reset your password:</p>
+    <a href='$reset_link' style='background:#007bff;color:white;padding:10px;text-decoration:none;border-radius:5px;'>
+        Reset Password
+    </a>
+    <p>Or copy this link: $reset_link</p>
+";
+
+if (sendMLMEmail($email, "Password Reset", $email_body)) {
+    $_SESSION['message'] = "Reset link sent to your email";
+} else {
+    $error = "Failed to send email. Please try again later.";
+}
         // Send email
         if (sendResetEmail($email, $token)) {
             $_SESSION['message'] = "Reset link sent to your email";

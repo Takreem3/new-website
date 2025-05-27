@@ -27,3 +27,6 @@ php_flag display_errors Off
 php_value session.cookie_httponly 1
 php_value session.cookie_secure 1
 php_value session.use_strict_mode 1
+<Files "genealogy.php">
+    Require all granted
+</Files>

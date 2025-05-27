@@ -171,4 +171,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </div>
 
 <?php include 'includes/footer.php'; ?>
-
+$welcome_email = "
+    <h2>Welcome to Our MLM System!</h2>
+    <p>Your account has been created successfully.</p>
+    <p>Login here: <a href='".BASE_URL."login.php'>".BASE_URL."login.php</a></p>
+";
+sendMLMEmail($email, "Welcome to MLM System", $welcome_email);

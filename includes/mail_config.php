@@ -2,36 +2,35 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-defined('BASE_URL') || define('BASE_URL', 'http://localhost/mlm_website/');
+require __DIR__.'/../vendor/autoload.php';
 
-function sendResetEmail($email, $token) {
+function sendMLMEmail($to, $subject, $body) {
     $mail = new PHPMailer(true);
     
     try {
-        // Server settings
+        // Server settings (Gmail SMTP)
         $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com'; // Your SMTP server
+        $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'your@gmail.com'; // SMTP username
-        $mail->Password   = 'your_app_password'; // Use App Password for Gmail
+        $mail->Username   = 'takreem244@gmail.com'; // Your email
+        $mail->Password   = 'qfna geae qtxr upel'; // APP PASSWORD (not regular password)
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port       = 465;
 
         // Recipients
-        $mail->setFrom('noreply@yourdomain.com', 'MLM System');
-        $mail->addAddress($email);
+        $mail->setFrom('noreply@mlm-system.com', 'MLM System');
+        $mail->addAddress($to);
 
         // Content
-        $resetLink = BASE_URL . "reset_password.php?token=$token";
         $mail->isHTML(true);
-        $mail->Subject = 'Password Reset Request';
-        $mail->Body    = "Click to reset: <a href='$resetLink'>$resetLink</a>";
-        $mail->AltBody = "Reset link: $resetLink";
+        $mail->Subject = $subject;
+        $mail->Body    = $body;
+        $mail->AltBody = strip_tags($body); // Plain text fallback
 
         $mail->send();
         return true;
     } catch (Exception $e) {
-        error_log("Mailer Error: {$mail->ErrorInfo}");
+        error_log("Mail Error: {$mail->ErrorInfo}");
         return false;
     }
 }

@@ -85,4 +85,10 @@ Crypto: Wallet Address"></textarea>
 </div>
 
 <?php require __DIR__.'/includes/footer.php'; ?>
+$withdrawal_email = "
+    <h3>Withdrawal Request Received</h3>
+    <p>Amount: $".number_format($amount, 2)."</p>
+    <p>Status: Pending Approval</p>
+";
+sendMLMEmail($user_email, "Withdrawal Request", $withdrawal_email);
 
