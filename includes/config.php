@@ -1,8 +1,30 @@
 <?php
-// Error reporting (disable in production)
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Database configuration - UPDATE THESE VALUES
+$db_host = "localhost";
+$db_user = "your_actual_username"; // Usually 'root' for XAMPP
+$db_pass = "your_actual_password"; // Usually empty for XAMPP
+$db_name = "your_actual_database"; // Your database name
 
+// Create connection
+$conn = mysqli_connect($db_host, $db_user, $db_pass, $db_name);
+
+// Check connection
+if (!$conn) {
+    die("Database connection failed: " . mysqli_connect_error());
+}
+?>
+<?php
+// Enable full error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Database connection
+$conn = mysqli_connect("localhost", "your_username", "your_password", "your_database");
+
+if (!$conn) {
+    die("Database connection failed: " . mysqli_connect_error());
+}
 // Define constants only if they don't exist
 defined('DB_HOST') || define('DB_HOST', 'localhost');
 defined('DB_USER') || define('DB_USER', 'root');
