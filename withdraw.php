@@ -1,94 +1,77 @@
 <?php
-require __DIR__.'/includes/config.php';
-require __DIR__.'/includes/auth.php';
+session_start();
+require 'includes/config.php';
 
-// Define minimum withdrawal amount
-$min_withdrawal = 50;
-
-// Calculate approved balance
-$balance = $conn->query("
-    SELECT SUM(amount) 
-    FROM commissions 
-    WHERE user_id = {$_SESSION['user_id']} 
-    AND status = 'approved'
-")->fetch_row()[0] ?? 0;
-
-// Process form submission
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && $balance >= $min_withdrawal) {
-    $amount = (float)$_POST['amount'];
-    $method = $conn->real_escape_string($_POST['method']);
-    $details = $conn->real_escape_string($_POST['details']);
-
-    $conn->query("
-        INSERT INTO withdrawals SET
-        user_id = {$_SESSION['user_id']},
-        amount = $amount,
-        payment_method = '$method',
-        account_details = '$details'
-    ");
-
-    $_SESSION['success'] = "Withdrawal request submitted!";
-    header("Location: dashboard.php");
+// Check authentication
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
     exit();
 }
 
-require __DIR__.'/includes/header.php';
+$user_id = $_SESSION['user_id'];
+$error = '';
+$success = '';
+
+// Check available balance
+$balance_result = $conn->query("
+    SELECT SUM(amount) as total 
+    FROM payments 
+    WHERE user_id = $user_id 
+    AND status = 'approved'
+");
+$balance = $balance_result->fetch_assoc()['total'] ?? 0;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $amount = floatval($_POST['amount']);
+    
+    if ($amount <= 0) {
+        $error = "Invalid amount";
+    } elseif ($amount > $balance) {
+        $error = "Insufficient balance";
+    } else {
+        $insert = $conn->query("
+            INSERT INTO withdrawals (user_id, amount, status)
+            VALUES ($user_id, $amount, 'pending')
+        ");
+        
+        if ($insert) {
+            $success = "Withdrawal request submitted!";
+        } else {
+            $error = "Error: " . $conn->error;
+        }
+    }
+}
 ?>
-
-<div class="container">
-    <h2>Withdraw Funds</h2>
-
-    <?php if (isset($_SESSION['success'])): ?>
-        <div class="alert alert-success"><?= $_SESSION['success'] ?></div>
-        <?php unset($_SESSION['success']); ?>
-    <?php endif; ?>
-
-    <div class="card">
-        <div class="card-body">
-            <h5>Available Balance: $<?= number_format($balance, 2) ?></h5>
-
-            <?php if ($balance >= $min_withdrawal): ?>
-                <form method="POST">
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Withdraw Funds</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Withdraw Funds</h2>
+        <?php if ($error): ?>
+            <div class="alert alert-danger"><?= $error ?></div>
+        <?php endif; ?>
+        <?php if ($success): ?>
+            <div class="alert alert-success"><?= $success ?></div>
+        <?php endif; ?>
+        
+        <div class="card">
+            <div class="card-body">
+                <p>Available Balance: $<?= number_format($balance, 2) ?></p>
+                
+                <form method="post">
                     <div class="mb-3">
-                        <label>Amount</label>
+                        <label class="form-label">Amount to Withdraw</label>
                         <input type="number" name="amount" class="form-control" 
-                               max="<?= $balance ?>" min="<?= $min_withdrawal ?>" step="0.01" required>
+                               step="0.01" min="10" max="<?= $balance ?>" required>
                     </div>
-
-                    <div class="mb-3">
-                        <label>Payment Method</label>
-                        <select name="method" class="form-control" required>
-                            <option value="">Select Method</option>
-                            <option value="bank">Bank Transfer</option>
-                            <option value="paypal">PayPal</option>
-                            <option value="crypto">Cryptocurrency</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label>Account Details</label>
-                        <textarea name="details" class="form-control" rows="4" required
-                                  placeholder="Bank: Account Number, Name, Branch
-PayPal: Email Address
-Crypto: Wallet Address"></textarea>
-                    </div>
-
                     <button type="submit" class="btn btn-primary">Submit Request</button>
                 </form>
-            <?php else: ?>
-                <div class="alert alert-warning">
-                    Minimum withdrawal amount is $<?= $min_withdrawal ?> (Your balance: $<?= number_format($balance, 2) ?>)
-                </div>
-            <?php endif; ?>
+            </div>
         </div>
     </div>
-</div>
-
-<?php require __DIR__.'/includes/footer.php'; ?>
-$withdrawal_email = "
-    <h3>Withdrawal Request Received</h3>
-    <p>Amount: $".number_format($amount, 2)."</p>
-    <p>Status: Pending Approval</p>
-";
-sendMLMEmail($user_email, "Withdrawal Request", $withdrawal_email);
-
+</body>
+</html>

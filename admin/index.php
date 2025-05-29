@@ -1,61 +1,82 @@
 <?php
-require __DIR__.'/../includes/config.php';
-require __DIR__.'/../includes/auth.php';
-
-// Secure admin access
-if(!isset($_SESSION['admin_id'])) {
-    header("Location: login.php");
-    exit();
-}
-
-// Get stats
-$users = $conn->query("SELECT COUNT(*) FROM users")->fetch_row()[0];
-$pending_withdrawals = $conn->query("SELECT COUNT(*) FROM withdrawals WHERE status='pending'")->fetch_row()[0];
-$total_commissions = $conn->query("SELECT SUM(amount) FROM commissions")->fetch_row()[0] ?? 0;
-
-require __DIR__.'/../includes/header.php';
+require 'includes/auth_check.php';
 ?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block bg-dark sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active text-white" href="index.php">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="users.php">Users</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="payments.php">Payments</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="withdrawals.php">Withdrawals</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="kyc.php">KYC</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="logout.php">Logout</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
 
-<div class="container-fluid">
-    <h2 class="mt-4">Admin Dashboard</h2>
-    
-    <div class="row mt-4">
-        <!-- Stats Cards -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-primary text-white mb-4">
-                <div class="card-body">
-                    <h5>Total Users</h5>
-                    <h2><?= $users ?></h2>
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <h2>Dashboard Overview</h2>
+                <div class="row my-4">
+                    <div class="col-md-4">
+                        <div class="card text-white bg-primary mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Total Users</h5>
+                                <?php
+                                $result = $conn->query("SELECT COUNT(*) as total FROM users");
+                                $total = $result->fetch_assoc()['total'];
+                                ?>
+                                <p class="card-text display-4"><?= $total ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-white bg-success mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Active Users</h5>
+                                <?php
+                                $result = $conn->query("SELECT COUNT(*) as total FROM users WHERE payment_status = 'verified'");
+                                $total = $result->fetch_assoc()['total'];
+                                ?>
+                                <p class="card-text display-4"><?= $total ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-white bg-warning mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Pending Actions</h5>
+                                <?php
+                                $result = $conn->query("SELECT (SELECT COUNT(*) FROM payments WHERE status = 'pending') as total");
+                                $total = $result->fetch_assoc()['total'];
+                                ?>
+                                <p class="card-text display-4"><?= $total ?></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-warning text-white mb-4">
-                <div class="card-body">
-                    <h5>Pending Withdrawals</h5>
-                    <h2><?= $pending_withdrawals ?></h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-success text-white mb-4">
-                <div class="card-body">
-                    <h5>Total Commissions</h5>
-                    <h2>$<?= number_format($total_commissions, 2) ?></h2>
-                </div>
-            </div>
+            </main>
         </div>
     </div>
-    
-    <!-- Quick Links -->
-    <div class="row">
-        <div class="col-md-3">
-            <a href="withdrawals.php" class="btn btn-info w-100 mb-2">Withdrawals</a>
-        </div>
-        <div class="col-md-3">
-            <a href="users.php" class="btn btn-secondary w-100 mb-2">User Management</a>
-        </div>
-    </div>
-</div>
-
-<?php require __DIR__.'/../includes/footer.php'; ?>
+</body>
+</html>

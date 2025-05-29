@@ -1,69 +1,62 @@
 <?php
 session_start();
-require __DIR__.'/../includes/config.php';
-
-// Redirect if already logged in
-if(isset($_SESSION['admin_id'])) {
-    header("Location: index.php");
-    exit();
-}
+require '../includes/config.php';
 
 $error = '';
-if($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $conn->real_escape_string($_POST['username']);
     $password = $_POST['password'];
     
-    $stmt = $conn->prepare("SELECT id, password FROM admin WHERE username = ? LIMIT 1");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $result = $conn->query("SELECT * FROM users WHERE username = '$username'");
     
-    if($result->num_rows === 1) {
-        $admin = $result->fetch_assoc();
-        if(password_verify($password, $admin['password'])) {
-            $_SESSION['admin_id'] = $admin['id'];
-            header("Location: index.php");
-            exit();
+    if ($result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+        
+        if (password_verify($password, $user['password'])) {
+            if ($user['is_admin'] == 1) {
+                $_SESSION['admin_id'] = $user['id'];
+                header("Location: index.php");
+                exit();
+            } else {
+                $error = "Access denied - Not an admin";
+            }
+        } else {
+            $error = "Invalid password";
         }
+    } else {
+        $error = "User not found";
     }
-    $error = "Invalid username or password";
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f8f9fa; }
-        .login-container { max-width: 400px; margin: 5rem auto; }
-    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="login-container">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center">
-                    <h4>Admin Login</h4>
-                </div>
-                <div class="card-body">
-                    <?php if($error): ?>
-                        <div class="alert alert-danger"><?= $error ?></div>
-                    <?php endif; ?>
-                    
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label class="form-label">Username</label>
-                            <input type="text" name="username" class="form-control" required autofocus>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Login</button>
-                    </form>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow">
+                    <div class="card-body p-5">
+                        <h2 class="text-center mb-4">Admin Login</h2>
+                        <?php if ($error): ?>
+                            <div class="alert alert-danger"><?= $error ?></div>
+                        <?php endif; ?>
+                        <form method="post">
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <input type="text" name="username" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" name="password" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Login</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
