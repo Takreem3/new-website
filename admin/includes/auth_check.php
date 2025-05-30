@@ -1,20 +1,19 @@
 <?php
 session_start();
-require '../../includes/config.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header("Location: login.php");
-    exit();
+// Correct path for your structure
+require __DIR__ . '/../../database.php'; // Adjusted to your actual file location
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: /new-website/login.php");
+    exit;
 }
 
-// Verify admin status
-$admin_id = $_SESSION['admin_id'];
-$result = $conn->query("SELECT is_admin FROM users WHERE id = $admin_id");
-$user = $result->fetch_assoc();
-
-if (!$user || $user['is_admin'] != 1) {
+// Verify admin status using your existing user table
+$check_admin = $conn->query("SELECT id FROM users WHERE id = {$_SESSION['user_id']} AND is_admin = 1");
+if ($check_admin->num_rows == 0) {
     session_destroy();
-    header("Location: login.php");
-    exit();
+    header("Location: /new-website/login.php?error=admin_required");
+    exit;
 }
 ?>

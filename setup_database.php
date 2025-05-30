@@ -65,3 +65,13 @@ foreach ($tables as $sql) {
 
 echo "Database setup completed successfully!";
 ?>
+// Add after your existing connection code in database.php
+$conn->query("CREATE TABLE IF NOT EXISTS kyc_verifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    document_type VARCHAR(50) NOT NULL,
+    document_number VARCHAR(100) NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    status ENUM('pending','approved','rejected') DEFAULT 'pending',
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
