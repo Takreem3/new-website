@@ -1,9 +1,7 @@
 <?php
-session_start();
-require 'includes/config.php';
+require 'database.php';
 
 $error = '';
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $conn->real_escape_string($_POST['username']);
     $password = $_POST['password'];
@@ -16,52 +14,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
-            header("Location: dashboard.php");
-            exit();
-        } else {
-            $error = "Invalid password";
+            
+            // Redirect to appropriate dashboard
+            if ($user['is_admin'] == 1) {
+                header("Location: /new-website/admin/");
+            } else {
+                header("Location: /new-website/dashboard.php");
+            }
+            exit;
         }
-    } else {
-        $error = "User not found";
     }
+    
+    $error = "Invalid username or password";
 }
 ?>
+
 <!DOCTYPE html>
 <html>
 <head>
     <title>Login</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container mt-5" style="max-width: 500px;">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h3 class="text-center">Login</h3>
+    <div class="login-container">
+        <h1>Login to MLM System</h1>
+        
+        <?php if ($error): ?>
+            <div class="error"><?= $error ?></div>
+        <?php endif; ?>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label>Username:</label>
+                <input type="text" name="username" required>
             </div>
-            <div class="card-body">
-                <?php if ($error): ?>
-                    <div class="alert alert-danger"><?= $error ?></div>
-                <?php endif; ?>
-                
-                <form method="post">
-                    <div class="mb-3">
-                        <label class="form-label">Username</label>
-                        <input type="text" name="username" class="form-control" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Password</label>
-                        <input type="password" name="password" class="form-control" required>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100">Login</button>
-                    
-                    <div class="mt-3 text-center">
-                        Don't have an account? <a href="register.php">Register</a>
-                    </div>
-                </form>
+            
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" name="password" required>
             </div>
-        </div>
+            
+            <button type="submit">Login</button>
+        </form>
     </div>
 </body>
 </html>
