@@ -3,7 +3,6 @@ session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Database configuration
 $servername = "localhost";
 $username = "root";
 $password = "";
@@ -17,7 +16,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Create tables if missing
+// Only create tables if they don't exist
 $conn->query("CREATE TABLE IF NOT EXISTS users (
     id INT(11) AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -25,8 +24,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     sponsor_id INT(11) DEFAULT NULL,
     is_admin TINYINT(1) DEFAULT 0,
-    payment_status VARCHAR(20) DEFAULT 'unpaid',
-    secret_key VARCHAR(32),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
 
@@ -36,7 +33,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS kyc_verifications (
     document_type VARCHAR(50) NOT NULL,
     document_number VARCHAR(100) NOT NULL,
     file_path VARCHAR(255) NOT NULL,
-    status ENUM('pending','approved','rejected') DEFAULT 'pending',
+    status VARCHAR(20) DEFAULT 'pending',
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
 ?>

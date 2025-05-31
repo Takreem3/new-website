@@ -2,26 +2,20 @@
 require 'database.php';
 require 'includes/header.php';
 
-// Simple router
-$request = $_SERVER['REQUEST_URI'];
-$path = parse_url($request, PHP_URL_PATH);
+// Simple working homepage
+echo '<main class="container">';
+echo '<h1>Welcome to MLM System</h1>';
 
-switch ($path) {
-    case '/new-website/':
-    case '/new-website/index.php':
-        echo '<h1>Welcome to MLM System</h1>';
-        if (isset($_SESSION['user_id'])) {
-            echo '<p>Welcome, '.htmlspecialchars($_SESSION['username']).'</p>';
-            echo '<a href="dashboard.php">Dashboard</a>';
-        } else {
-            echo '<a href="login.php">Login</a> | <a href="register.php">Register</a>';
-        }
-        break;
-        
-    default:
-        http_response_code(404);
-        echo '<h1>Page Not Found</h1>';
-        break;
+if (isset($_SESSION['user_id'])) {
+    $user = $conn->query("SELECT username FROM users WHERE id = {$_SESSION['user_id']}")->fetch_assoc();
+    echo "<p>Welcome back, " . htmlspecialchars($user['username']) . "!</p>";
+    echo '<a href="dashboard.php" class="btn">Go to Dashboard</a>';
+} else {
+    echo '<a href="login.php" class="btn">Login</a>';
+    echo '<a href="register.php" class="btn">Register</a>';
 }
 
+echo '</main>';
+
 require 'includes/footer.php';
+?>
